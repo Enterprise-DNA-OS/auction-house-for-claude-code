@@ -22,9 +22,49 @@ Fill this in once. A worker with context knows. A worker without it guesses.
 
 | When the operator asks for... | Use this |
 |---|---|
-| <!-- TODO(author): one row per slash command --> | `/...` |
+| What needs me today? | `/attention` |
+| Our sales and how they went | `/sales` |
+| Show a sale's catalogue, or put a lot in a sale | `/catalogue` |
+| The absentee book, or take a bid | `/absentee` |
+| Enter the results off the clerk sheet | `/hammer` |
+| How did a sale go? | `/results` |
+| Find lots | `/lots` |
+| Consignments and their terms | `/consignments` |
+| Vendors and buyers | `/clients` |
+| What didn't sell? | `/passed-in` |
+| What's bought and still here? | `/storage` |
+| Raise or list buyer invoices | `/invoices` |
+| Who hasn't paid? | `/overdue` |
+| Record a payment | `/pay` |
+| A buyer is collecting | `/collect` |
+| Pay the vendors for a sale | `/settle` |
+| Show settlements | `/settlements` |
+| Artist resale royalties | `/royalties` |
+| Taonga tūturu | `/taonga` |
+| Are we compliant? | `/compliance` |
+| Monday review | `/weekly-review` |
+| Save the Monday review | `/draft-weekly-review` |
+| Results letter to a vendor | `/draft-vendor-report` |
+| Chase a buyer for payment | `/draft-payment-reminder` |
+| Ask a buyer to collect | `/draft-collection-notice` |
+| Add a record | `/add` |
+| Change a field | `/update` |
+| Show one record | `/card` |
+| What changed? | `/audit` |
+| Bring data across from Auction Flex | `/import` |
+| Export everything | `/export` |
+| Change a field, rule or stage | `/customise` |
+| Add a dashboard page | `/new-view` |
 
-If an ask fits nothing here, run the CLI directly (`npm run <cli> -- --help`) and then propose a new command for it.
+If an ask fits nothing here, run the CLI directly (`node scripts/auction.mjs help`) and then propose a new command for it.
+
+## House rules for an auction house
+
+- A vendor's reserve, commission and settlement, and a buyer's bids and spending, are private to them. Never put one client's figures in another's draft.
+- Record a hammer price, a payment, a collection or a royalty report only when the operator confirms it happened, with the date it happened.
+- Invoices and settlements run as a dry run first. Approve a settlement only on the operator's yes. Approved settlements are never edited: fix the record and settle again.
+- Never sell or hand over a taonga tūturu outside the Protected Objects Act rules in `docs/compliance.md`. Never accept cash past the limits there.
+- Terms come from the consignment agreement. If a commission, fee or reserve is not recorded, ask; never assume.
 
 ## Hard rules
 

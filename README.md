@@ -40,11 +40,37 @@
 
 Auction House for Claude Code does the job you pay Auction Flex for, as a Postgres database and a set of agent commands. There is no web front end. You open the folder in [Claude Code](https://claude.com/claude-code) (or Codex, OpenCode, Cursor: see `AGENTS.md`) and ask for what you want in plain language. It runs the right query, and it can answer questions the Auction Flex dashboard cannot.
 
-<!-- TODO(author): the annual bill. One sentence: what a 10 to 50 person business typically pays Auction Flex per year, all in, with a source. -->
+Auction Flex rents its desktop software by the workstation: US$85 a month for one, US$190 a month for four, US$30 a month for each one after that, or US$550 a month for unlimited, which is US$6,600 a year. The web version, Auction Flex 360, runs from US$95 to US$295 a month, and online bidding through HiBid adds a 2% auction fee on top ([Auction Flex pricing](https://www.auctionflex.com/pricing.htm), checked 2026-11-13). Here there is no workstation count and no per-sale fee.
 
 Want the same thing with a web front end, or built on a different stack? That is a customisation, and it is exactly what Enterprise DNA does: [book a call](https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=auction-flex).
 
-<!-- TODO(author): two or three sentences on what this specific product covers and who it is for. -->
+It is built for auction houses in New Zealand and Australia: art, antiques, jewellery, furniture, collectables and estates. Consignments come in with their terms, lots go into sales with estimates and reserves, the absentee book fills, results come off the clerk sheet, and the system raises buyer invoices with premium and GST, takes payments, charges storage, releases lots, and settles each vendor only for lots whose buyer has paid. It keeps the obligations straight as it goes: the artist resale royalty in both countries, taonga tūturu under the Protected Objects Act, cash limits for high-value dealers, and the settlement date in every consignment agreement.
+
+### Ten questions it answers on day one
+
+1. Which buyers are past the payment date, and which vendor settlements are they holding up?
+2. Which lots have been bought and not collected, and how much storage has each run up?
+3. Which artworks sold at or over the resale royalty threshold, and which royalty reports are late?
+4. Which taonga tūturu are in a sale with no certificate of examination, or knocked down to a buyer who is not a registered collector?
+5. Which invoices were paid with $10,000 or more in cash, and which of those included jewellery?
+6. Which vendors have paid lots waiting for settlement, and whose settlement is past the date in their terms?
+7. Which lots were passed in more than 30 days ago and are still in the store?
+8. Which lots in the next sale have no reserve, and which already have an absentee bid that covers it?
+9. Which consignments have lots in a sale and no signed agreement?
+10. How did each sale do against its estimates: sell-through, hammer against the low and high, lots above the high and below the low?
+
+### Your first hour: ten things to ask for
+
+1. "What needs my attention today?" (`/attention`)
+2. "Show me the catalogue for the Summer Art Sale with the absentee bids." (`/catalogue`)
+3. "Who hasn't paid from the last sale?" (`/overdue`)
+4. "Run the vendor settlements for S-102 as a dry run." (`/settle`)
+5. "Which artist royalties do we need to report, and by when?" (`/royalties`)
+6. "Are we compliant on royalties, taonga and cash?" (`/compliance`)
+7. "What's still in the store that's been bought?" (`/storage`)
+8. "How did the Decorative Arts sale go against estimates?" (`/results`)
+9. "Draft the results letter for the Cole estate." (`/draft-vendor-report`)
+10. "Add a field for the buyer's paddle number to every invoice." (`/customise`)
 
 ## Why no front end
 
@@ -63,7 +89,9 @@ npm install
 npm run demo
 ```
 
-Then open the folder in Claude Code and type a slash command. <!-- TODO(author): name the first command to try. -->
+Then open the folder in Claude Code and type `/attention`. The demo auction house has a saleroom in Auckland and one in Sydney, twelve clients, seven consignments and four sales (three held, one coming up), with the usual loose ends: a buyer who has not paid, lots nobody has collected, a lot passed in and never sent back, lots in the store with no sale, a vendor settlement past its date with no bank account on file, an Australian royalty report past 90 days, a hei tiki knocked down to a buyer who is not a registered collector, a carved wahaika in the next sale with no museum certificate, a ring paid for in cash over the limit, an unsigned consignment agreement and a lot with no reserve.
+
+`npm run view` writes the dashboards (this week, sale results, money in and out, royalties and taonga) to `views/`. `npm run docs` writes buyer tax invoices, vendor settlement statements and consignment receipts to `docs-out/`, in your brand from `brand.json`.
 
 ### Use it with your own Postgres or Supabase
 
@@ -71,15 +99,49 @@ Copy `.env.example` to `.env`, set `DATABASE_URL`, then `npm run migrate`. Same 
 
 ## The commands
 
-<!-- TODO(author): a table of the slash commands in .claude/commands and what each one does. -->
-
 | Command | What it does |
 |---|---|
-| `/...` | ... |
+| `/absentee` | The absentee and phone bid book for a sale, or take a new bid. |
+| `/add` | Add a saleroom, client, consignment, lot, sale or absentee bid from a plain description. |
+| `/attention` | Everything that needs the saleroom today, in one list. |
+| `/audit` | What changed recently and on which record. |
+| `/card` | Show the full record for one saleroom, client, consignment, sale, lot, bid, invoice or settlement. |
+| `/catalogue` | The catalogue for one sale, or put a lot into a sale. |
+| `/clients` | Vendors and buyers, with identity, GST, bank and registered collector details. |
+| `/collect` | Hand a bought lot to its buyer. |
+| `/compliance` | Check the records against the rules in docs/compliance.md (artist resale royalty, taonga tūturu, cash, consignment agreements, vendor settlements, GST) and report what is breached, held or due, with the rule cited. |
+| `/consignments` | Consignments: who sent what, on what terms, and what has sold. |
+| `/customise` | Make this system yours in plain language. Add a field, rename stages, change a rule, add a column to a document. Writes the migration, applies it, updates the commands that touch it. |
+| `/draft-collection-notice` | Draft a note to a buyer whose lots are still in the store. |
+| `/draft-payment-reminder` | Draft a payment reminder to a buyer with an overdue invoice. |
+| `/draft-vendor-report` | Draft the results letter to a vendor for one consignment. |
+| `/draft-weekly-review` | Save the Monday review as a draft file. |
+| `/export` | Export every record to CSV and one JSON snapshot. |
+| `/hammer` | Record sale results: the hammer price and buyer, a pass, or a withdrawal. |
+| `/import` | Bring consignors and inventory across from Auction Flex or another system. |
+| `/invoices` | Raise the buyer invoices for a sale, or list invoices. |
+| `/lots` | Find lots by sale, status, vendor or consignment. |
+| `/new-view` | Add a read-only HTML view (a dashboard page) from a plain-language description, rendered in the operator's brand by `npm run view`. |
+| `/overdue` | Buyers who have not paid on time. |
+| `/passed-in` | Lots that did not sell, and what to do with each. |
+| `/pay` | Record a buyer payment. |
+| `/results` | How a held sale went: sell-through, hammer against estimates, top lots. |
+| `/royalties` | Artist resale royalties: what is owed, to whom, and when it must be reported. |
+| `/sales` | Every sale: date, status, lots offered and sold, sell-through and hammer against the estimates. |
+| `/settle` | Run the vendor settlements for a sale, check them and approve them. |
+| `/settlements` | Vendor settlements: drafted, approved, paid and due. |
+| `/storage` | Bought lots still in the store, and the storage they are running up. |
+| `/taonga` | Taonga tūturu in the saleroom: museum notice, certificate, buyer status. |
+| `/update` | Change a field on a record: estimates, reserves, dates, terms, identity, GST or bank details. |
+| `/weekly-review` | The Monday review: what needs attention, the next sale, recent results, money owed both ways. |
+
+Every command drives one CLI: `node scripts/auction.mjs help`.
 
 ## Instead of Auction Flex
 
-<!-- TODO(author): how to bring data across from Auction Flex; link docs/replace-auction-flex.md -->
+Two files come across: your consignor list (`import auction-flex --kind=consignors`) and your inventory (`import auction-flex --kind=lots`), each as CSV with a dry run first. A repeat import adds nothing twice. Consignment terms, identity and bank details are filled in after. The guide, including what does not come across: [docs/replace-auction-flex.md](docs/replace-auction-flex.md).
+
+The rules the compliance checks enforce, with sources: [docs/compliance.md](docs/compliance.md).
 
 ## Architecture
 

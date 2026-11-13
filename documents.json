@@ -1,11 +1,71 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
+    "name": "buyer-invoice",
+    "title": "Tax invoice",
+    "for_each": "select i.id, i.ref || ' ' || b.name as name from invoices i join clients b on b.id = i.buyer_id",
     "file": "name",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      {
+        "title": "Invoice",
+        "layout": "record",
+        "sql": "select i.ref as invoice, b.name as buyer, s.name as sale, i.issued_on, i.due_on from invoices i join clients b on b.id = i.buyer_id join sales s on s.id = i.sale_id where i.id = $1"
+      },
+      {
+        "title": "Lots",
+        "sql": "select l.lot_number, l.title, l.hammer_cents, r.currency from lots l join invoices i on i.sale_id = l.sale_id and i.buyer_id = l.buyer_id join sales s on s.id = i.sale_id join salerooms r on r.id = s.saleroom_id where i.id = $1 and l.status = 'sold' order by l.lot_number",
+        "columns": ["lot_number", "title", "hammer_cents"]
+      },
+      {
+        "title": "Amount due",
+        "layout": "record",
+        "note": "GST is charged on the buyer's premium and any storage. Lots are released once the invoice is paid in full.",
+        "sql": "select i.hammer_cents, i.premium_cents, i.gst_cents, i.storage_cents, i.total_cents, coalesce((select sum(p.amount_cents) from payments p where p.invoice_id = i.id), 0)::bigint as paid_cents, i.total_cents - coalesce((select sum(p.amount_cents) from payments p where p.invoice_id = i.id), 0)::bigint as owing_cents, i.currency from invoices i where i.id = $1",
+        "columns": ["hammer_cents", "premium_cents", "gst_cents", "storage_cents", "total_cents", "paid_cents", "owing_cents"]
+      }
+    ]
+  },
+  {
+    "name": "vendor-settlement",
+    "title": "Vendor settlement statement",
+    "for_each": "select st.id, st.ref || ' ' || v.name as name from settlements st join consignments c on c.id = st.consignment_id join clients v on v.id = c.vendor_id where st.status <> 'draft'",
+    "file": "name",
+    "sections": [
+      {
+        "title": "Settlement",
+        "layout": "record",
+        "sql": "select st.ref, v.name as vendor, nullif(v.gst_number, '') as vendor_gst_number, c.ref as consignment, s.name as sale, s.sale_date, st.status, st.due_on, st.paid_on from settlements st join consignments c on c.id = st.consignment_id join clients v on v.id = c.vendor_id join sales s on s.id = st.sale_id where st.id = $1"
+      },
+      {
+        "title": "Lots sold",
+        "sql": "select l.lot_number, l.title, sl.hammer_cents, sl.commission_cents, sl.fees_cents, sl.royalty_cents, st.currency from settlement_lines sl join lots l on l.id = sl.lot_id join settlements st on st.id = sl.settlement_id where sl.settlement_id = $1 order by l.lot_number",
+        "columns": ["lot_number", "title", "hammer_cents", "commission_cents", "fees_cents", "royalty_cents"]
+      },
+      {
+        "title": "Your account",
+        "layout": "record",
+        "note": "The artist resale royalty is deducted where the law makes the seller liable, and paid by us to the collecting agency.",
+        "sql": "select hammer_cents, -commission_cents as commission_cents, -fees_cents as lot_fees_cents, -gst_cents as gst_on_commission_and_fees_cents, -royalty_cents as artist_resale_royalty_cents, net_cents as paid_to_you_cents, lots_held, currency from settlements where id = $1",
+        "columns": ["hammer_cents", "commission_cents", "lot_fees_cents", "gst_on_commission_and_fees_cents", "artist_resale_royalty_cents", "paid_to_you_cents", "lots_held"]
+      }
+    ]
+  },
+  {
+    "name": "consignment-receipt",
+    "title": "Consignment receipt",
+    "for_each": "select c.id, c.ref || ' ' || v.name as name from consignments c join clients v on v.id = c.vendor_id",
+    "file": "name",
+    "sections": [
+      {
+        "title": "Received from",
+        "layout": "record",
+        "sql": "select c.ref as consignment, v.name as vendor, v.email, c.received_on, c.agreement_signed_on, coalesce(c.commission_bps, (select value from settings where key = 'default_commission_bps')) as commission_bps, c.lot_fee_cents, c.settlement_days, r.currency from consignments c join clients v on v.id = c.vendor_id join salerooms r on r.id = c.saleroom_id where c.id = $1",
+        "columns": ["consignment", "vendor", "email", "received_on", "agreement_signed_on", "commission_bps", "lot_fee_cents", "settlement_days"]
+      },
+      {
+        "title": "Lots",
+        "sql": "select l.ref as lot, l.title, l.artist, l.low_estimate_cents, l.high_estimate_cents, l.reserve_cents, l.location, r.currency from lots l join consignments c on c.id = l.consignment_id join salerooms r on r.id = c.saleroom_id where l.consignment_id = $1 order by l.ref",
+        "columns": ["lot", "title", "artist", "low_estimate_cents", "high_estimate_cents", "reserve_cents", "location"]
+      }
     ]
   }
 ]

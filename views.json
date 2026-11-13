@@ -2,13 +2,40 @@
   {
     "name": "week",
     "title": "This week",
-    "subtitle": "Auction House for Claude Code: what needs attention, rendered by npm run view",
+    "subtitle": "Auction House for Claude Code: what needs the saleroom's attention",
     "sections": [
-      {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
-      }
+      { "title": "Buyers overdue", "note": "Invoices past the payment date with money still owing.", "sql": "select invoice, buyer, sale, due_on, current_date - due_on as days_overdue, owing_cents, currency from invoice_status where owing_cents > 0 and due_on < current_date order by due_on" },
+      { "title": "Vendor settlements not yet paid", "sql": "select st.ref, v.name as vendor, st.status, st.net_cents, st.due_on, st.currency, case when v.bank_account_on_file then 'yes' else 'no' end as bank_on_file from settlements st join consignments c on c.id = st.consignment_id join clients v on v.id = c.vendor_id where st.status <> 'paid' order by st.due_on" },
+      { "title": "Bought and not collected", "sql": "select lot, title, buyer, sale, current_date - sale_date as days_since_sale, location from lot_position where status = 'sold' and collected_on is null order by sale_date, lot" },
+      { "title": "Passed in, still here", "sql": "select lot, title, vendor, sale, current_date - sale_date as days_since, reserve_cents, currency from lot_position where status = 'passed_in' order by sale_date" },
+      { "title": "In the store, not in a sale", "sql": "select lot, title, vendor, received_on, current_date - received_on as days, location from lot_position where status = 'received' order by received_on" }
+    ]
+  },
+  {
+    "name": "sales",
+    "title": "Sale results",
+    "subtitle": "Every sale: lots offered, sold, sell-through and hammer against the estimates",
+    "sections": [
+      { "title": "By sale", "sql": "select sale, name, sale_date, status, lots_offered, lots_sold, passed_in, sell_through_pct, hammer_cents, low_estimate_cents, high_estimate_cents, above_high, below_low, currency from sale_results order by sale_date desc" },
+      { "title": "Top lots", "sql": "select sale, lot_number, title, artist, low_estimate_cents, high_estimate_cents, hammer_cents, buyer, currency from lot_position where status = 'sold' order by hammer_cents desc limit 15" }
+    ]
+  },
+  {
+    "name": "money",
+    "title": "Money in and out",
+    "subtitle": "Buyer invoices and vendor settlements",
+    "sections": [
+      { "title": "Buyer invoices", "sql": "select invoice, sale, buyer, issued_on, due_on, total_cents, paid_cents, owing_cents, currency from invoice_status order by issued_on desc, invoice" },
+      { "title": "Vendor settlements", "sql": "select st.ref, s.ref as sale, v.name as vendor, st.status, st.hammer_cents, st.commission_cents, st.fees_cents, st.gst_cents, st.royalty_cents, st.net_cents, st.due_on, st.paid_on, st.currency from settlements st join sales s on s.id = st.sale_id join consignments c on c.id = st.consignment_id join clients v on v.id = c.vendor_id order by s.sale_date desc, st.ref" }
+    ]
+  },
+  {
+    "name": "obligations",
+    "title": "Royalties and taonga",
+    "subtitle": "Artist resale royalties to report, and taonga tūturu in and through the saleroom",
+    "sections": [
+      { "title": "Artist resale royalties", "note": "Reported and paid to the collecting agency in each country. See docs/compliance.md for the deadlines.", "sql": "select l.ref as lot, l.title, rr.artist, rr.sale_price_cents, rr.royalty_cents, rr.agency, rr.report_due_on, rr.reported_on, rr.paid_on, r.currency from resale_royalties rr join lots l on l.id = rr.lot_id join consignments c on c.id = l.consignment_id join salerooms r on r.id = c.saleroom_id order by rr.reported_on nulls first, rr.report_due_on" },
+      { "title": "Taonga tūturu", "sql": "select lp.lot, lp.title, lp.sale, lp.status, l.museum_notified_on, nullif(l.examination_certificate, '') as certificate, lp.buyer, case when b.is_registered_collector then 'yes' when b.id is null then '' else 'no' end as buyer_registered, lp.collected_on from lot_position lp join lots l on l.id = lp.lot_id left join clients b on b.id = lp.buyer_id where l.is_taonga_tuturu order by lp.lot" }
     ]
   }
 ]
